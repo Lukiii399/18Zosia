@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>18-stka – film</title>
+  <meta name="description" content="Otwórz i od razu oglądaj film z 18-stki." />
+  <style>
+    :root { --bg: #0b0b10; --fg: #ffffff; }
+    html, body { height: 100%; }
+    body { margin:0; background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif; }
+    .wrap { position: fixed; inset: 0; display: grid; place-items: center; }
+    video, iframe { width: 1080px; height: 1920px; object-fit: contain; background:#000; }
+
+    .controls { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; }
+    .btn { pointer-events: auto; border: 0; border-radius: 9999px; padding: 14px 22px; font-size: 18px; font-weight: 700; background: rgba(255,255,255,.12); color: #fff; backdrop-filter: blur(6px); box-shadow: 0 10px 30px rgba(0,0,0,.35); cursor: pointer; }
+    .btn:hover { background: rgba(255,255,255,.18); }
+
+    .hint { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); opacity: .8; font-size: 12px; }
+    .hidden { display: none; }
+
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!--
+      WARIANT A: MP4 z repozytorium (pełna kontrola, działa bez reklam)
+      - wrzuć plik `film.mp4` do tego samego folderu co index.html
+      - zalecane kodowanie H.264 + AAC; rozdzielczość 1080p lub niżej
+      - przeglądarki pozwalają na autoplay TYLKO z wyciszonym dźwiękiem; dlatego startuje "muted"
+    -->
+    <video id="vid" playsinline muted autoplay preload="auto" controlslist="nodownload noremoteplayback">
+      <source src="film.mov" type="video/mp4" />
+      Twój browser nie wspiera odtwarzacza video. <a href="film.mp4">Pobierz film</a>.
+    </video>
+
+    <!--
+      WARIANT B: YouTube (prościej, jeśli plik jest duży)
+      - Ustaw film jako "Niepubliczny" na YouTube
+      - Skopiuj ID filmu (po v=...)
+      - ZAMIENNIE odkomentuj <iframe> poniżej i skomentuj element <video> powyżej
+      - Autoodtwarzanie działa tylko wyciszone; przycisk poniżej pozwoli od razu włączyć dźwięk
+    -->
+    <!--
+    <iframe id="yt" title="Odtwarzacz" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture; web-share" allowfullscreen
+      src="https://www.youtube.com/embed/VIDEO_ID?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1">
+    </iframe>
+    -->
+  </div>
+
+  <div class="controls">
+    <button id="sound" class="btn">🔊 Włącz dźwięk</button>
+  </div>
+  <div class="hint">Jeśli dźwięk nie działa od razu: dotknij ekranu lub kliknij przycisk „Włącz dźwięk”.</div>
+
+  <script>
+    // Logika przycisku dźwięku i fullscreen na żądanie użytkownika
+    const vid = document.getElementById('vid');
+    const yt = document.getElementById('yt');
+    const btn = document.getElementById('sound');
+
+    function goFullscreen(el){
+      if (!document.fullscreenElement && el && el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {});
+      }
+    }
+
+    function unmuteMp4(){
+      if (!vid) return;
+      vid.muted = false;
+      vid.volume = 1.0;
+      vid.play().catch(()=>{});
+      goFullscreen(vid);
+      btn.classList.add('hidden');
+    }
+
+    function unmuteYT(){
+      if (!yt) return;
+      // Dla YouTube skorzystamy z API postMessage, aby wyłączyć mute
+      yt.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'unMute' }), '*');
+      yt.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo' }), '*');
+      goFullscreen(yt);
+      btn.classList.add('hidden');
+    }
+
+    btn.addEventListener('click', () => {
+      if (vid) unmuteMp4(); else unmuteYT();
+    });
+
+    // Dodatkowo: pierwsze tapnięcie/kliknięcie w dowolnym miejscu – odmutuj
+    document.addEventListener('pointerdown', () => {
+      if (btn.classList.contains('hidden')) return;
+      if (vid) unmuteMp4(); else unmuteYT();
+    }, { once: true });
+  </script>
+</body>
+</html>
